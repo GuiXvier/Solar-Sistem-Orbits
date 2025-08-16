@@ -129,84 +129,6 @@ const Star = ({ x, y, size, delay }) => {
   );
 };
 
-// Componente StarField
-const StarField = () => {
-  const stars = [];
-  for (let i = 0; i < 500; i++) {
-    stars.push({
-      id: i,
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      size: Math.random() * 1.5 + 0.5,
-      delay: Math.random() * 4
-    });
-  }
-
-  return (
-    <Box
-      sx={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        zIndex: 1
-      }}
-    >
-      {stars.map(star => (
-        <Star key={star.id} {...star} />
-      ))}
-    </Box>
-  );
-};
-
-// Componente Asteroid
-const Asteroid = ({ x, y }) => (
-  <Box
-    sx={{
-      position: 'absolute',
-      width: '0.5px',
-      height: '0.5px',
-      backgroundColor: '#666',
-      borderRadius: '50%',
-      opacity: 0.4,
-      left: `${x}px`,
-      top: `${y}px`
-    }}
-  />
-);
-
-// Componente AsteroidBelt
-const AsteroidBelt = () => {
-  const asteroids = [];
-  for (let i = 0; i < 100; i++) {
-    const angle = (360 / 100) * i + Math.random() * 10 - 5;
-    const radius = 187 + Math.random() * 20 - 10;
-    const x = Math.cos(angle * Math.PI / 180) * radius + 187;
-    const y = Math.sin(angle * Math.PI / 180) * radius + 187;
-
-    asteroids.push({ id: i, x, y });
-  }
-
-  return (
-    <Box
-      sx={{
-        position: 'absolute',
-        width: '374px',
-        height: '374px',
-        left: '50%',
-        top: '50%',
-        transform: 'translate(-50%, -50%)',
-        pointerEvents: 'none'
-      }}
-    >
-      {asteroids.map(asteroid => (
-        <Asteroid key={asteroid.id} {...asteroid} />
-      ))}
-    </Box>
-  );
-};
-
 // Componente Planet
 const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
   const { name, period, currentAngle, planetSize, color, hasRings, hasMoon, info } = data;
@@ -421,8 +343,12 @@ const SolarSystem = () => {
   const handleWheel = useCallback((e) => {
     e.preventDefault();
     const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    setZoom(prevZoom => Math.max(0.1, Math.min(5, prevZoom * delta)));
-  }, []);
+    const newZoom = Math.max(0.1, Math.min(5, zoom * delta));
+    setZoom(newZoom); // Apenas atualize o estado para o display
+    if (solarSystemRef.current) {
+      solarSystemRef.current.style.transform = `translate(${panX}px, ${panY}px) scale(${newZoom})`;
+    }
+  }, [panX, panY, zoom]);
 
   // Controle de pan (arrastar)
   const handleMouseDown = useCallback((e) => {
@@ -435,12 +361,20 @@ const SolarSystem = () => {
       const deltaX = e.clientX - lastMouse.x;
       const deltaY = e.clientY - lastMouse.y;
 
-      setPanX(prev => prev + deltaX);
-      setPanY(prev => prev + deltaY);
+      const newPanX = panX + deltaX;
+      const newPanY = panY + deltaY;
+
+      setPanX(newPanX); // Apenas atualize o estado para os controles
+      setPanY(newPanY);
 
       setLastMouse({ x: e.clientX, y: e.clientY });
+
+      // Aqui é onde a mágica acontece: atualize a ref diretamente
+      if (solarSystemRef.current) {
+        solarSystemRef.current.style.transform = `translate(${newPanX}px, ${newPanY}px) scale(${zoom})`;
+      }
     }
-  }, [isDragging, lastMouse]);
+  }, [isDragging, lastMouse, panX, panY, zoom]);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
@@ -499,13 +433,6 @@ const SolarSystem = () => {
     };
   }, [handleWheel, handleMouseDown, handleMouseMove, handleMouseUp]);
 
-  // Atualizar transform do sistema solar
-  useEffect(() => {
-    if (solarSystemRef.current) {
-      solarSystemRef.current.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
-    }
-  }, [panX, panY, zoom]);
-
   // Handlers vazios para manter compatibilidade
   const handlePlanetHover = () => { };
   const handlePlanetLeave = () => { };
@@ -521,8 +448,6 @@ const SolarSystem = () => {
         userSelect: 'none',
       }}
     >
-      <StarField />
-
       {/* Container principal */}
       <Box
         ref={containerRef}
@@ -546,11 +471,9 @@ const SolarSystem = () => {
             width: '1200px',
             height: '1200px',
             transformStyle: 'preserve-3d',
-            transition: 'transform 0.1s ease-out'
           }}
         >
           <Sun />
-          <AsteroidBelt />
 
           {Object.entries(planetData).map(([key, data]) => (
             <Planet
