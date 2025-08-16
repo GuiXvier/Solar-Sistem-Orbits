@@ -581,46 +581,6 @@ const SolarSystem = () => {
         </Typography>
       </Paper>
 
-      {/* Controle de Velocidade */}
-      <Paper
-        sx={{
-          position: 'absolute',
-          bottom: 80,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          px: 3,
-          py: 2,
-          backgroundColor: alpha(theme.palette.common.black, 0.8),
-          backdropFilter: 'blur(10px)',
-          minWidth: 300
-        }}
-      >
-        <Stack direction="row" spacing={2} alignItems="center">
-          <Typography variant="body2" sx={{ color: theme.palette.common.white, fontWeight: 'bold' }}>
-            Aceleração:
-          </Typography>
-          <Slider
-            value={speed}
-            onChange={(_, newValue) => setSpeed(newValue)}
-            min={1}
-            max={10000}
-            step={1}
-            sx={{
-              color: theme.palette.warning.main,
-              '& .MuiSlider-thumb': {
-                backgroundColor: theme.palette.warning.main
-              },
-              '& .MuiSlider-track': {
-                backgroundColor: theme.palette.warning.main
-              }
-            }}
-          />
-          <Typography variant="body2" sx={{ color: theme.palette.warning.main, fontWeight: 'bold', minWidth: 80 }}>
-            {formatSpeed(speed)}
-          </Typography>
-        </Stack>
-      </Paper>
-
       {/* Controles */}
       <Stack
         direction="row"
@@ -632,22 +592,6 @@ const SolarSystem = () => {
           transform: 'translateX(-50%)'
         }}
       >
-        <Button
-          variant="contained"
-          startIcon={isPaused ? <PlayArrow /> : <Pause />}
-          onClick={() => setIsPaused(!isPaused)}
-          sx={{
-            backgroundColor: alpha(theme.palette.common.white, 0.15),
-            color: theme.palette.common.white,
-            backdropFilter: 'blur(10px)',
-            '&:hover': {
-              backgroundColor: alpha(theme.palette.common.white, 0.25)
-            }
-          }}
-        >
-          {isPaused ? 'Continuar' : 'Pausar'}
-        </Button>
-
         <Button
           variant="contained"
           startIcon={<CenterFocusStrong />}
@@ -665,22 +609,6 @@ const SolarSystem = () => {
           }}
         >
           Centralizar
-        </Button>
-
-        <Button
-          variant="contained"
-          startIcon={<AccessTime />}
-          onClick={() => setSpeed(1)}
-          sx={{
-            backgroundColor: alpha(theme.palette.common.white, 0.15),
-            color: theme.palette.common.white,
-            backdropFilter: 'blur(10px)',
-            '&:hover': {
-              backgroundColor: alpha(theme.palette.common.white, 0.25)
-            }
-          }}
-        >
-          Tempo Real
         </Button>
       </Stack>
     </Box>
