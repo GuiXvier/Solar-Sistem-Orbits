@@ -75,9 +75,14 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
   const semiMajorAxis = data.orbitSize / 2; // 'a'
   const semiMinorAxis = semiMajorAxis * Math.sqrt(1 - eccentricity * eccentricity); // 'b'
 
-  // Calcule a posição X e Y do planeta na órbita elíptica
-  const x = Math.cos(currentAngle * Math.PI / 180) * semiMajorAxis;
-  const y = Math.sin(currentAngle * Math.PI / 180) * semiMinorAxis;
+  // Para órbitas elípticas reais, precisamos considerar o foco da elipse
+  const focusDistance = semiMajorAxis * eccentricity; // distância do centro ao foco
+  const anomalyRad = currentAngle * Math.PI / 180;
+
+  // Posição na elipse com o Sol em um dos focos
+  const x = (semiMajorAxis * Math.cos(anomalyRad)) - focusDistance;
+  const y = semiMinorAxis * Math.sin(anomalyRad);
+
 
   return (
     <Box>
@@ -87,19 +92,18 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
           position: 'absolute',
           border: `1px solid ${alpha(theme.palette.common.white, 0.06)}`,
           borderRadius: '50%',
-          // Use os semi-eixos para definir a largura e altura da órbita
           width: `${semiMajorAxis * 2}px`,
           height: `${semiMinorAxis * 2}px`,
           left: '50%',
           top: '50%',
-          transform: 'translate(-50%, -50%)',
+          // Adicione esta linha para deslocar a órbita considerando o foco:
+          transform: `translate(calc(-50% - ${focusDistance}px), -50%)`,
           '&:hover': {
             borderColor: alpha(theme.palette.warning.main, 0.3),
             borderWidth: '2px'
           }
         }}
       />
-
       {/* Container do Planeta */}
       <Box
         sx={{
@@ -285,7 +289,7 @@ const SolarSystem = () => {
       currentAngle: 78,
       info: "O maior planeta. Mais de 80 luas conhecidas. Grande Mancha Vermelha é uma tempestade maior que a Terra.",
       orbitSize: 520,
-      eccentricity: 0.048,
+      eccentricity: 0.049,
       planetSize: 12,
       color: "radial-gradient(circle, #D8CA9D 0%, #FAB069 50%, #CC8B5C 100%)"
     },
@@ -295,7 +299,7 @@ const SolarSystem = () => {
       currentAngle: 345,
       info: "Famoso pelos anéis espetaculares. Densidade menor que a água. Titã, sua maior lua, tem atmosfera densa.",
       orbitSize: 954,
-      eccentricity: 0.054,
+      eccentricity: 0.057,
       planetSize: 10,
       color: "radial-gradient(circle, #FAB069, #E6B35C)",
       hasRings: true
@@ -306,7 +310,7 @@ const SolarSystem = () => {
       currentAngle: 45,
       info: "Gira 'de lado' (98° de inclinação). Gigante gelado com anéis verticais. 27 luas conhecidas.",
       orbitSize: 1916,
-      eccentricity: 0.047,
+      eccentricity: 0.046,
       planetSize: 6,
       color: "radial-gradient(circle, #4FD0E7, #3BA7C7)"
     },
@@ -316,7 +320,7 @@ const SolarSystem = () => {
       currentAngle: 315,
       info: "O planeta mais distante. Ventos de até 2.100 km/h - os mais rápidos do Sistema Solar. Cor azul devido ao metano.",
       orbitSize: 3006,
-      eccentricity: 0.009,
+      eccentricity: 0.011,
       planetSize: 6,
       color: "radial-gradient(circle, #4169E1, #2E4BC7)"
     }
