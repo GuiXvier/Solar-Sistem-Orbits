@@ -346,6 +346,26 @@ const SolarSystem = () => {
     return mapping[englishName] || englishName.toLowerCase();
   };
 
+  // Adicione esta função antes do fetchPlanetPositions
+  const calculateCurrentPosition = (body) => {
+    const now = new Date();
+    const J2000 = new Date('2000-01-01T12:00:00Z');
+    const daysSinceJ2000 = (now - J2000) / (1000 * 60 * 60 * 24);
+
+    // Elementos orbitais
+    const semiMajorAxis = body.semimajorAxis;
+    const eccentricity = body.eccentricity;
+    const sideralOrbit = body.sideralOrbit; // período orbital em dias
+
+    // Calcular anomalia média atual
+    const meanMotion = 360 / sideralOrbit; // graus por dia
+    const meanAnomaly = (meanMotion * daysSinceJ2000) % 360;
+
+    // Para uma aproximação simples, usar a anomalia média como posição
+    // (em uma implementação completa, você resolveria a equação de Kepler)
+    return meanAnomaly;
+  };
+
   const fetchPlanetPositions = useCallback(async () => {
     setIsLoadingPositions(true);
     try {
@@ -357,16 +377,18 @@ const SolarSystem = () => {
 
         data.bodies.forEach(body => {
           if (body.isPlanet && body.englishName) {
-            const planetKey = mapPlanetName(body.englishName); // MANTER APENAS ESTA LINHA
-
-            // REMOVER: const planetKey = body.englishName.toLowerCase();
+            const planetKey = mapPlanetName(body.englishName);
 
             if (updatedPlanets[planetKey]) {
-              // MUDAR AQUI: usar meanAnomaly dos dados reais
-              const meanAnomaly = body.meanAnomaly || body.currentAngle || 0;
+              // USAR OS DADOS REAIS DA API
+              const currentPosition = calculateCurrentPosition(body);
               updatedPlanets[planetKey] = {
                 ...updatedPlanets[planetKey],
-                currentAngle: meanAnomaly % 360,
+                currentAngle: currentPosition,
+                // Atualizar também os dados orbitais reais
+                period: body.sideralOrbit,
+                eccentricity: body.eccentricity,
+                orbitSize: body.semimajorAxis / 1000000, // escalar para visualização
               };
             }
           }
