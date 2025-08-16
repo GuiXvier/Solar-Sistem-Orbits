@@ -241,7 +241,7 @@ const SolarSystem = () => {
     mercury: {
       name: "Mercúrio",
       period: 88,
-      currentAngle: 152,
+      currentAngle: 292.47,
       info: "O menor e mais rápido planeta. Temperaturas extremas: 427°C (dia) a -173°C (noite). Sem atmosfera significativa.",
       orbitSize: 80,
       eccentricity: 0.206,
@@ -251,7 +251,7 @@ const SolarSystem = () => {
     venus: {
       name: "Vênus",
       period: 225,
-      currentAngle: 108,
+      currentAngle: 283.27,
       info: "O planeta mais quente (462°C) devido ao efeito estufa. Rotação retrógrada. Pressão 90x maior que a Terra.",
       orbitSize: 108,
       eccentricity: 0.007,
@@ -261,7 +261,7 @@ const SolarSystem = () => {
     earth: {
       name: "Terra",
       period: 365.25,
-      currentAngle: 227,
+      currentAngle: 218.828,
       info: "Nosso planeta azul. Única vida conhecida no universo. 71% da superfície coberta por água. 1 lua natural.",
       orbitSize: 150,
       eccentricity: 0.017,
@@ -272,7 +272,7 @@ const SolarSystem = () => {
     mars: {
       name: "Marte",
       period: 687,
-      currentAngle: 53,
+      currentAngle: 234.44,
       info: "O planeta vermelho. Possui as maiores montanhas e cânions do Sistema Solar. Duas pequenas luas: Fobos e Deimos.",
       orbitSize: 228,
       eccentricity: 0.093,
