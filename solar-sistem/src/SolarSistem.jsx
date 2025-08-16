@@ -358,31 +358,33 @@ const SolarSystem = () => {
   const fetchPlanetPositions = useCallback(async () => {
     setIsLoadingPositions(true);
     try {
-      // Usar cálculos locais baseados na NASA JPL
       const currentDate = new Date();
       const positions = calculateAllPlanetPositions(currentDate);
 
-      const updatedPlanets = { ...planetData };
+      // USE CALLBACK DO setState EM VEZ DE ACESSAR planetData DIRETAMENTE
+      setPlanetData(prevPlanetData => {
+        const updatedPlanets = { ...prevPlanetData };
 
-      Object.entries(positions).forEach(([planetKey, position]) => {
-        if (updatedPlanets[planetKey]) {
-          updatedPlanets[planetKey] = {
-            ...updatedPlanets[planetKey],
-            currentAngle: position.normalizedAngle,
-            // Manter dados visuais originais, mas usar posição real
-            realDistance: position.r // distância real em AU
-          };
-        }
+        Object.entries(positions).forEach(([planetKey, position]) => {
+          if (updatedPlanets[planetKey]) {
+            updatedPlanets[planetKey] = {
+              ...updatedPlanets[planetKey],
+              currentAngle: position.normalizedAngle,
+              realDistance: position.r
+            };
+          }
+        });
+
+        return updatedPlanets;
       });
 
-      setPlanetData(updatedPlanets);
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Erro ao calcular posições dos planetas:', error);
     } finally {
       setIsLoadingPositions(false);
     }
-  }, [planetData]);
+  }, []); // Array vazio - sem dependências
 
   // Função auxiliar para API alternativa
   const fetchFromAlternativeAPI = async () => {
@@ -563,7 +565,7 @@ const SolarSystem = () => {
     }, 21600000);
 
     return () => clearInterval(updateInterval);
-  }, [fetchPlanetPositions]);
+  }, []);
 
   return (
     <Box
@@ -709,40 +711,6 @@ const SolarSystem = () => {
           transform: 'translateX(-50%)'
         }}
       >
-        <Button
-          variant="contained"
-          startIcon={<CenterFocusStrong />}
-          onClick={() => {
-            setPanX(0);
-            setPanY(0);
-          }}
-          sx={{
-            backgroundColor: alpha(theme.palette.common.white, 0.15),
-            color: theme.palette.common.white,
-            backdropFilter: 'blur(10px)',
-            '&:hover': {
-              backgroundColor: alpha(theme.palette.common.white, 0.25)
-            }
-          }}
-        >
-          Centralizar
-        </Button>
-
-        <Button
-          variant="contained"
-          startIcon={<Refresh />}
-          onClick={fetchPlanetPositions}
-          disabled={isLoadingPositions}
-          sx={{
-            backgroundColor: alpha(theme.palette.info.main, 0.8),
-            color: theme.palette.common.white,
-            '&:hover': {
-              backgroundColor: alpha(theme.palette.info.main, 0.9)
-            }
-          }}
-        >
-          {isLoadingPositions ? 'Atualizando...' : 'Atualizar'}
-        </Button>
       </Stack>
     </Box>
   );
