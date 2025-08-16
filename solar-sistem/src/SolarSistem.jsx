@@ -212,6 +212,27 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
   const { name, period, currentAngle, planetSize, color, hasRings, hasMoon, info } = data;
   const theme = useTheme();
 
+  // Remova a lógica de rotação
+  const planetStyle = {
+    position: 'absolute',
+    width: `${planetSize}px`,
+    height: `${planetSize}px`,
+    background: color,
+    borderRadius: '50%',
+    cursor: 'pointer',
+    transition: 'transform 0.2s ease',
+    boxShadow: `0 0 ${planetSize}px ${alpha(theme.palette.common.white, 0.3)}`,
+    '&:hover': {
+      transform: 'translateY(-50%) scale(1.5)',
+      zIndex: 100
+    }
+  };
+
+  // Calcule a posição X e Y do planeta
+  const orbitRadius = data.orbitSize / 2;
+  const x = Math.cos(currentAngle * Math.PI / 180) * orbitRadius;
+  const y = Math.sin(currentAngle * Math.PI / 180) * orbitRadius;
+
   return (
     <Box>
       {/* Órbita */}
@@ -238,8 +259,7 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
           position: 'absolute',
           width: '100%',
           height: '100%',
-          transformOrigin: 'center',
-          transform: `rotate(${currentAngle}deg)`,  // ← Manter apenas esta linha
+          // Remova a linha "transform: `rotate(${currentAngle}deg)`, " daqui
         }}
       >
         <Tooltip
@@ -261,21 +281,10 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
         >
           <Box
             sx={{
-              position: 'absolute',
-              width: `${planetSize}px`,
-              height: `${planetSize}px`,
-              background: color,
-              borderRadius: '50%',
-              right: 0,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              cursor: 'pointer',
-              transition: 'transform 0.2s ease',
-              boxShadow: `0 0 ${planetSize}px ${alpha(theme.palette.common.white, 0.3)}`,
-              '&:hover': {
-                transform: 'translateY(-50%) scale(1.5)',
-                zIndex: 100
-              }
+              ...planetStyle,
+              left: `calc(50% + ${x}px)`,
+              top: `calc(50% + ${y}px)`,
+              transform: 'translate(-50%, -50%)'
             }}
             onMouseEnter={(e) => onPlanetHover(e, name, info, period)}
             onMouseLeave={onPlanetLeave}
