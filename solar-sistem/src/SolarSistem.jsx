@@ -181,7 +181,6 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
           position: 'absolute',
           width: '100%',
           height: '100%',
-          // Remova a linha "transform: `rotate(${currentAngle}deg)`, " daqui
         }}
       >
         <Tooltip
@@ -217,17 +216,21 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
               size="small"
               sx={{
                 position: 'absolute',
-                transform: 'translateX(8px) translateY(-3px)',
+                bottom: '100%', // Posiciona acima do planeta
+                left: '50%', // Alinha horizontalmente
+                transform: 'translateX(-50%)', // Centraliza a chip
                 fontSize: '8px',
                 height: '16px',
-                backgroundColor: alpha(theme.palette.common.black, 0.6),
+                backgroundColor: 'transparent',
                 color: theme.palette.warning.main,
                 pointerEvents: 'none',
+                zIndex: 100, // Adicione um zIndex alto
                 '& .MuiChip-label': {
-                  px: 1
+                  px: 10
                 }
               }}
             />
+
 
             {/* Anéis de Saturno */}
             {hasRings && (
@@ -632,26 +635,6 @@ const SolarSystem = () => {
           }}
         >
           {isPaused ? 'Continuar' : 'Pausar'}
-        </Button>
-
-        <Button
-          variant="contained"
-          startIcon={<Refresh />}
-          onClick={() => {
-            setZoom(1);
-            setPanX(0);
-            setPanY(0);
-          }}
-          sx={{
-            backgroundColor: alpha(theme.palette.common.white, 0.15),
-            color: theme.palette.common.white,
-            backdropFilter: 'blur(10px)',
-            '&:hover': {
-              backgroundColor: alpha(theme.palette.common.white, 0.25)
-            }
-          }}
-        >
-          Reset
         </Button>
 
         <Button
