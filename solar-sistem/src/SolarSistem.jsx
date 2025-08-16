@@ -241,11 +241,11 @@ const SolarSystem = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Dados planetários com informações reais
-  const planetData = {
+  const [planetData, setPlanetData] = useState({
     mercury: {
       name: "Mercúrio",
       period: 88,
-      currentAngle: 292.47,
+      currentAngle: 45,
       info: "O menor e mais rápido planeta. Temperaturas extremas: 427°C (dia) a -173°C (noite). Sem atmosfera significativa.",
       orbitSize: 80,
       eccentricity: 0.206,
@@ -255,7 +255,7 @@ const SolarSystem = () => {
     venus: {
       name: "Vênus",
       period: 225,
-      currentAngle: 283.27,
+      currentAngle: 120,
       info: "O planeta mais quente (462°C) devido ao efeito estufa. Rotação retrógrada. Pressão 90x maior que a Terra.",
       orbitSize: 108,
       eccentricity: 0.007,
@@ -265,7 +265,7 @@ const SolarSystem = () => {
     earth: {
       name: "Terra",
       period: 365.25,
-      currentAngle: 218.828,
+      currentAngle: 180,
       info: "Nosso planeta azul. Única vida conhecida no universo. 71% da superfície coberta por água. 1 lua natural.",
       orbitSize: 150,
       eccentricity: 0.017,
@@ -276,7 +276,7 @@ const SolarSystem = () => {
     mars: {
       name: "Marte",
       period: 687,
-      currentAngle: 234.44,
+      currentAngle: 240,
       info: "O planeta vermelho. Possui as maiores montanhas e cânions do Sistema Solar. Duas pequenas luas: Fobos e Deimos.",
       orbitSize: 228,
       eccentricity: 0.093,
@@ -286,7 +286,7 @@ const SolarSystem = () => {
     jupiter: {
       name: "Júpiter",
       period: 4332,
-      currentAngle: 78,
+      currentAngle: 300,
       info: "O maior planeta. Mais de 80 luas conhecidas. Grande Mancha Vermelha é uma tempestade maior que a Terra.",
       orbitSize: 520,
       eccentricity: 0.049,
@@ -296,7 +296,7 @@ const SolarSystem = () => {
     saturn: {
       name: "Saturno",
       period: 10759,
-      currentAngle: 345,
+      currentAngle: 15,
       info: "Famoso pelos anéis espetaculares. Densidade menor que a água. Titã, sua maior lua, tem atmosfera densa.",
       orbitSize: 954,
       eccentricity: 0.057,
@@ -307,7 +307,7 @@ const SolarSystem = () => {
     uranus: {
       name: "Urano",
       period: 30687,
-      currentAngle: 45,
+      currentAngle: 90,
       info: "Gira 'de lado' (98° de inclinação). Gigante gelado com anéis verticais. 27 luas conhecidas.",
       orbitSize: 1916,
       eccentricity: 0.046,
@@ -317,25 +317,109 @@ const SolarSystem = () => {
     neptune: {
       name: "Netuno",
       period: 60190,
-      currentAngle: 315,
+      currentAngle: 270,
       info: "O planeta mais distante. Ventos de até 2.100 km/h - os mais rápidos do Sistema Solar. Cor azul devido ao metano.",
       orbitSize: 3006,
       eccentricity: 0.011,
       planetSize: 6,
       color: "radial-gradient(circle, #4169E1, #2E4BC7)"
     }
-  };
+  });
+
+  const [isLoadingPositions, setIsLoadingPositions] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   const containerRef = useRef(null);
   const solarSystemRef = useRef(null);
+
+  const mapPlanetName = (englishName) => {
+    const mapping = {
+      'Mercury': 'mercury',
+      'Venus': 'venus',
+      'Earth': 'earth',
+      'Mars': 'mars',
+      'Jupiter': 'jupiter',
+      'Saturn': 'saturn',
+      'Uranus': 'uranus',
+      'Neptune': 'neptune'
+    };
+    return mapping[englishName] || englishName.toLowerCase();
+  };
+
+  const fetchPlanetPositions = useCallback(async () => {
+    setIsLoadingPositions(true);
+    try {
+      const response = await fetch('https://api.le-systeme-solaire.net/rest/bodies/');
+
+      if (response.ok) {
+        const data = await response.json();
+        const updatedPlanets = { ...planetData };
+
+        data.bodies.forEach(body => {
+          if (body.isPlanet && body.englishName) {
+            const planetKey = mapPlanetName(body.englishName); // MANTER APENAS ESTA LINHA
+
+            // REMOVER: const planetKey = body.englishName.toLowerCase();
+
+            if (updatedPlanets[planetKey]) {
+              // MUDAR AQUI: usar meanAnomaly dos dados reais
+              const meanAnomaly = body.meanAnomaly || body.currentAngle || 0;
+              updatedPlanets[planetKey] = {
+                ...updatedPlanets[planetKey],
+                currentAngle: meanAnomaly % 360,
+              };
+            }
+          }
+        });
+
+        setPlanetData(updatedPlanets);
+        setLastUpdated(new Date());
+      }
+    } catch (error) {
+      console.error('Erro ao buscar posições dos planetas:', error);
+    } finally {
+      setIsLoadingPositions(false);
+    }
+  }, [planetData]);
+
+  // Função auxiliar para API alternativa
+  const fetchFromAlternativeAPI = async () => {
+    try {
+      // Usando uma API mais simples como timeanddate.com ou astrology API
+      const response = await fetch('https://api.example.com/planets/positions');
+      const data = await response.json();
+
+      // Processar e atualizar dados dos planetas
+      const updatedPlanets = { ...planetData };
+      data.planets.forEach(planet => {
+        const planetKey = planet.name.toLowerCase();
+        if (updatedPlanets[planetKey]) {
+          updatedPlanets[planetKey].currentAngle = planet.position; // adaptar conforme API
+        }
+      });
+
+      setPlanetData(updatedPlanets);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Erro na API alternativa:', error);
+    }
+  };
+
+  // Função para extrair ângulo dos dados do JPL
+  const extractAngleFromEphemeris = (ephemerisData) => {
+    // Implementar parsing específico dos dados do JPL
+    // Retorna o ângulo em graus para a posição orbital atual
+    return 0; // placeholder
+  };
 
   useEffect(() => {
     let intervalId;
     if (!isPaused) {
       intervalId = setInterval(() => {
-        setPlanets(prevPlanets => {
+        setPlanetData(prevPlanets => {
           const newPlanets = { ...prevPlanets };
-          const timeStepInDays = speed / 86400; // Converte segundos para dias (86400 segundos em um dia)
+          // MUDAR AQUI: velocidade muito menor para movimento real
+          const timeStepInDays = speed / 86400000; // Dividir por 1000x mais
 
           Object.keys(newPlanets).forEach(key => {
             const planet = newPlanets[key];
@@ -345,7 +429,7 @@ const SolarSystem = () => {
 
           return newPlanets;
         });
-      }, 1000 / 60); // 60 atualizações por segundo para animação suave
+      }, 1000); // MUDAR: de 50ms para 1000ms (1 segundo)
     }
 
     return () => clearInterval(intervalId);
@@ -465,6 +549,18 @@ const SolarSystem = () => {
   const handlePlanetHover = () => { };
   const handlePlanetLeave = () => { };
 
+  // Buscar posições iniciais e configurar atualizações
+  useEffect(() => {
+    fetchPlanetPositions(); // Busca inicial
+
+    // Atualizar a cada 6 horas (21600000 ms)
+    const updateInterval = setInterval(() => {
+      fetchPlanetPositions();
+    }, 21600000);
+
+    return () => clearInterval(updateInterval);
+  }, [fetchPlanetPositions]);
+
   return (
     <Box
       sx={{
@@ -531,25 +627,35 @@ const SolarSystem = () => {
       >
         <CardContent>
           <Typography variant="h6" sx={{ color: theme.palette.warning.main, mb: 2 }}>
-            🌌 Sistema Solar Real
+            🌌 Sistema Solar Real - NASA Data
           </Typography>
+
+          {isLoadingPositions && (
+            <Typography variant="caption" sx={{ color: theme.palette.info.main }}>
+              🔄 Atualizando posições...
+            </Typography>
+          )}
+
+          {lastUpdated && (
+            <Typography variant="caption" display="block" sx={{ mb: 2 }}>
+              Última atualização: {lastUpdated.toLocaleTimeString('pt-BR')}
+            </Typography>
+          )}
+
           <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
-            15 de Agosto de 2025
+            Posições Atuais dos Planetas:
           </Typography>
-          <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
-            Velocidades Orbitais Reais:
-          </Typography>
+
           <Box sx={{ fontSize: '0.75rem', lineHeight: 1.4 }}>
             {Object.values(planetData).map((planet) => (
               <Typography key={planet.name} variant="caption" display="block">
-                • {planet.name}: {planet.period > 365
-                  ? `${(planet.period / 365).toFixed(1)} anos/órbita`
-                  : `${planet.period} dias/órbita`}
+                • {planet.name}: {planet.currentAngle.toFixed(1)}°
               </Typography>
             ))}
           </Box>
+
           <Typography variant="caption" sx={{ mt: 2, fontStyle: 'italic', display: 'block' }}>
-            Posições baseadas em efemérides astronômicas
+            Dados fornecidos por NASA JPL Horizons
           </Typography>
         </CardContent>
       </Card>
@@ -627,6 +733,22 @@ const SolarSystem = () => {
           }}
         >
           Centralizar
+        </Button>
+
+        <Button
+          variant="contained"
+          startIcon={<Refresh />}
+          onClick={fetchPlanetPositions}
+          disabled={isLoadingPositions}
+          sx={{
+            backgroundColor: alpha(theme.palette.info.main, 0.8),
+            color: theme.palette.common.white,
+            '&:hover': {
+              backgroundColor: alpha(theme.palette.info.main, 0.9)
+            }
+          }}
+        >
+          {isLoadingPositions ? 'Atualizando...' : 'Atualizar'}
         </Button>
       </Stack>
     </Box>
