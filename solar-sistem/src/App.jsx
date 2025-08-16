@@ -1,4 +1,4 @@
-import SolarSystem from './SolarSystem';
+import SolarSystem from '../src/SolarSistem.jsx';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 
 const theme = createTheme({
@@ -14,3 +14,5 @@ function App() {
     </ThemeProvider>
   );
 }
+
+export default App;
