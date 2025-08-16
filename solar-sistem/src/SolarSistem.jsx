@@ -25,6 +25,8 @@ import {
   Info
 } from '@mui/icons-material';
 
+import { calculateHeliocentricPosition, calculateAllPlanetPositions, dateToJulianDay, testCalculations } from './mainFunctions'
+
 // Componente Star usando MUI Box
 const Star = ({ x, y, size, delay }) => {
   const theme = useTheme();
@@ -346,59 +348,37 @@ const SolarSystem = () => {
     return mapping[englishName] || englishName.toLowerCase();
   };
 
-  // Adicione esta função antes do fetchPlanetPositions
-  const calculateCurrentPosition = (body) => {
-    const now = new Date();
-    const J2000 = new Date('2000-01-01T12:00:00Z');
-    const daysSinceJ2000 = (now - J2000) / (1000 * 60 * 60 * 24);
+  // Adicione as funções do artifact acima no início do seu arquivo, após os imports
 
-    // Elementos orbitais
-    const semiMajorAxis = body.semimajorAxis;
-    const eccentricity = body.eccentricity;
-    const sideralOrbit = body.sideralOrbit; // período orbital em dias
-
-    // Calcular anomalia média atual
-    const meanMotion = 360 / sideralOrbit; // graus por dia
-    const meanAnomaly = (meanMotion * daysSinceJ2000) % 360;
-
-    // Para uma aproximação simples, usar a anomalia média como posição
-    // (em uma implementação completa, você resolveria a equação de Kepler)
-    return meanAnomaly;
+  const calculateCurrentPosition = (planetKey, date = new Date()) => {
+    const position = calculateHeliocentricPosition(planetKey, date);
+    return position ? position.normalizedAngle : 0;
   };
 
   const fetchPlanetPositions = useCallback(async () => {
     setIsLoadingPositions(true);
     try {
-      const response = await fetch('https://api.le-systeme-solaire.net/rest/bodies/');
+      // Usar cálculos locais baseados na NASA JPL
+      const currentDate = new Date();
+      const positions = calculateAllPlanetPositions(currentDate);
 
-      if (response.ok) {
-        const data = await response.json();
-        const updatedPlanets = { ...planetData };
+      const updatedPlanets = { ...planetData };
 
-        data.bodies.forEach(body => {
-          if (body.isPlanet && body.englishName) {
-            const planetKey = mapPlanetName(body.englishName);
+      Object.entries(positions).forEach(([planetKey, position]) => {
+        if (updatedPlanets[planetKey]) {
+          updatedPlanets[planetKey] = {
+            ...updatedPlanets[planetKey],
+            currentAngle: position.normalizedAngle,
+            // Manter dados visuais originais, mas usar posição real
+            realDistance: position.r // distância real em AU
+          };
+        }
+      });
 
-            if (updatedPlanets[planetKey]) {
-              // USAR OS DADOS REAIS DA API
-              const currentPosition = calculateCurrentPosition(body);
-              updatedPlanets[planetKey] = {
-                ...updatedPlanets[planetKey],
-                currentAngle: currentPosition,
-                // Atualizar também os dados orbitais reais
-                period: body.sideralOrbit,
-                eccentricity: body.eccentricity,
-                orbitSize: body.semimajorAxis / 1000000, // escalar para visualização
-              };
-            }
-          }
-        });
-
-        setPlanetData(updatedPlanets);
-        setLastUpdated(new Date());
-      }
+      setPlanetData(updatedPlanets);
+      setLastUpdated(new Date());
     } catch (error) {
-      console.error('Erro ao buscar posições dos planetas:', error);
+      console.error('Erro ao calcular posições dos planetas:', error);
     } finally {
       setIsLoadingPositions(false);
     }
@@ -438,20 +418,22 @@ const SolarSystem = () => {
     let intervalId;
     if (!isPaused) {
       intervalId = setInterval(() => {
+        // Recalcular posições baseadas no tempo real
+        const currentDate = new Date(Date.now() + speed * 1000); // acelerar o tempo
+        const positions = calculateAllPlanetPositions(currentDate);
+
         setPlanetData(prevPlanets => {
           const newPlanets = { ...prevPlanets };
-          // MUDAR AQUI: velocidade muito menor para movimento real
-          const timeStepInDays = speed / 86400000; // Dividir por 1000x mais
 
-          Object.keys(newPlanets).forEach(key => {
-            const planet = newPlanets[key];
-            const angleChange = (timeStepInDays / planet.period) * 360;
-            planet.currentAngle = (planet.currentAngle + angleChange) % 360;
+          Object.entries(positions).forEach(([planetKey, position]) => {
+            if (newPlanets[planetKey]) {
+              newPlanets[planetKey].currentAngle = position.normalizedAngle;
+            }
           });
 
           return newPlanets;
         });
-      }, 1000); // MUDAR: de 50ms para 1000ms (1 segundo)
+      }, 1000); // Atualizar a cada segundo
     }
 
     return () => clearInterval(intervalId);
@@ -649,35 +631,24 @@ const SolarSystem = () => {
       >
         <CardContent>
           <Typography variant="h6" sx={{ color: theme.palette.warning.main, mb: 2 }}>
-            🌌 Sistema Solar Real - NASA Data
+            🌌 Sistema Solar Real - NASA JPL Data
           </Typography>
 
-          {isLoadingPositions && (
-            <Typography variant="caption" sx={{ color: theme.palette.info.main }}>
-              🔄 Atualizando posições...
-            </Typography>
-          )}
-
-          {lastUpdated && (
-            <Typography variant="caption" display="block" sx={{ mb: 2 }}>
-              Última atualização: {lastUpdated.toLocaleTimeString('pt-BR')}
-            </Typography>
-          )}
-
           <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
-            Posições Atuais dos Planetas:
+            Posições Calculadas (NASA JPL):
           </Typography>
 
           <Box sx={{ fontSize: '0.75rem', lineHeight: 1.4 }}>
-            {Object.values(planetData).map((planet) => (
+            {Object.entries(planetData).map(([key, planet]) => (
               <Typography key={planet.name} variant="caption" display="block">
                 • {planet.name}: {planet.currentAngle.toFixed(1)}°
+                {planet.realDistance && ` (${planet.realDistance.toFixed(2)} AU)`}
               </Typography>
             ))}
           </Box>
 
           <Typography variant="caption" sx={{ mt: 2, fontStyle: 'italic', display: 'block' }}>
-            Dados fornecidos por NASA JPL Horizons
+            Cálculos baseados em elementos orbitais NASA JPL
           </Typography>
         </CardContent>
       </Card>
