@@ -106,7 +106,7 @@ const planetData = {
 // Componente Star usando MUI Box
 const Star = ({ x, y, size, delay }) => {
   const theme = useTheme();
-  
+
   return (
     <Box
       sx={{
@@ -184,7 +184,7 @@ const AsteroidBelt = () => {
     const radius = 187 + Math.random() * 20 - 10;
     const x = Math.cos(angle * Math.PI / 180) * radius + 187;
     const y = Math.sin(angle * Math.PI / 180) * radius + 187;
-    
+
     asteroids.push({ id: i, x, y });
   }
 
@@ -211,7 +211,7 @@ const AsteroidBelt = () => {
 const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
   const { name, period, currentAngle, planetSize, color, hasRings, hasMoon, info } = data;
   const theme = useTheme();
-  
+
   return (
     <Box>
       {/* Órbita */}
@@ -231,7 +231,7 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
           }
         }}
       />
-      
+
       {/* Container do Planeta */}
       <Box
         sx={{
@@ -239,12 +239,7 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
           width: '100%',
           height: '100%',
           transformOrigin: 'center',
-          animation: `orbit ${period / speed}s linear infinite`,
-          transform: `rotate(${currentAngle}deg)`,
-          '@keyframes orbit': {
-            '0%': { transform: `rotate(${currentAngle}deg)` },
-            '100%': { transform: `rotate(${currentAngle + 360}deg)` }
-          }
+          transform: `rotate(${currentAngle}deg)`,  // ← Manter apenas esta linha
         }}
       >
         <Tooltip
@@ -363,7 +358,7 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
 // Componente Sun
 const Sun = () => {
   const theme = useTheme();
-  
+
   return (
     <Box
       sx={{
@@ -379,10 +374,10 @@ const Sun = () => {
         animation: 'sunPulse 6s ease-in-out infinite alternate',
         zIndex: 10,
         '@keyframes sunPulse': {
-          '0%': { 
+          '0%': {
             boxShadow: '0 0 30px rgba(255, 215, 0, 0.8), 0 0 60px rgba(255, 140, 0, 0.6)'
           },
-          '100%': { 
+          '100%': {
             boxShadow: '0 0 40px rgba(255, 215, 0, 1), 0 0 80px rgba(255, 140, 0, 0.8)'
           }
         }
@@ -430,10 +425,10 @@ const SolarSystem = () => {
     if (isDragging) {
       const deltaX = e.clientX - lastMouse.x;
       const deltaY = e.clientY - lastMouse.y;
-      
+
       setPanX(prev => prev + deltaX);
       setPanY(prev => prev + deltaY);
-      
+
       setLastMouse({ x: e.clientX, y: e.clientY });
     }
   }, [isDragging, lastMouse]);
@@ -445,7 +440,7 @@ const SolarSystem = () => {
   // Atalhos de teclado
   useEffect(() => {
     const handleKeyDown = (e) => {
-      switch(e.key) {
+      switch (e.key) {
         case ' ':
           e.preventDefault();
           setIsPaused(prev => !prev);
@@ -503,8 +498,8 @@ const SolarSystem = () => {
   }, [panX, panY, zoom]);
 
   // Handlers vazios para manter compatibilidade
-  const handlePlanetHover = () => {};
-  const handlePlanetLeave = () => {};
+  const handlePlanetHover = () => { };
+  const handlePlanetLeave = () => { };
 
   return (
     <Box
@@ -515,13 +510,10 @@ const SolarSystem = () => {
         overflow: 'hidden',
         position: 'relative',
         userSelect: 'none',
-        '& *': {
-          animationPlayState: isPaused ? 'paused' : 'running'
-        }
       }}
     >
       <StarField />
-      
+
       {/* Container principal */}
       <Box
         ref={containerRef}
@@ -550,7 +542,7 @@ const SolarSystem = () => {
         >
           <Sun />
           <AsteroidBelt />
-          
+
           {Object.entries(planetData).map(([key, data]) => (
             <Planet
               key={key}
@@ -590,8 +582,8 @@ const SolarSystem = () => {
           <Box sx={{ fontSize: '0.75rem', lineHeight: 1.4 }}>
             {Object.values(planetData).map((planet) => (
               <Typography key={planet.name} variant="caption" display="block">
-                • {planet.name}: {planet.period > 365 
-                  ? `${(planet.period / 365).toFixed(1)} anos/órbita` 
+                • {planet.name}: {planet.period > 365
+                  ? `${(planet.period / 365).toFixed(1)} anos/órbita`
                   : `${planet.period} dias/órbita`}
               </Typography>
             ))}
@@ -709,7 +701,7 @@ const SolarSystem = () => {
         >
           {isPaused ? 'Continuar' : 'Pausar'}
         </Button>
-        
+
         <Button
           variant="contained"
           startIcon={<Refresh />}
@@ -729,7 +721,7 @@ const SolarSystem = () => {
         >
           Reset
         </Button>
-        
+
         <Button
           variant="contained"
           startIcon={<CenterFocusStrong />}
@@ -748,7 +740,7 @@ const SolarSystem = () => {
         >
           Centralizar
         </Button>
-        
+
         <Button
           variant="contained"
           startIcon={<AccessTime />}
