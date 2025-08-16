@@ -33,6 +33,7 @@ const planetData = {
     currentAngle: 152,
     info: "O menor e mais rápido planeta. Temperaturas extremas: 427°C (dia) a -173°C (noite). Sem atmosfera significativa.",
     orbitSize: 80,
+    eccentricity: 0.206,
     planetSize: 3,
     color: "radial-gradient(circle, #B8860B, #8C7853)"
   },
@@ -42,6 +43,7 @@ const planetData = {
     currentAngle: 108,
     info: "O planeta mais quente (462°C) devido ao efeito estufa. Rotação retrógrada. Pressão 90x maior que a Terra.",
     orbitSize: 108,
+    eccentricity: 0.007,
     planetSize: 4,
     color: "radial-gradient(circle, #FFF8DC, #FFC649)"
   },
@@ -51,6 +53,7 @@ const planetData = {
     currentAngle: 227,
     info: "Nosso planeta azul. Única vida conhecida no universo. 71% da superfície coberta por água. 1 lua natural.",
     orbitSize: 150,
+    eccentricity: 0.017,
     planetSize: 4,
     color: "radial-gradient(circle, #4A90E2 0%, #2E5F8A 50%, #228B22 100%)",
     hasMoon: true
@@ -61,6 +64,7 @@ const planetData = {
     currentAngle: 53,
     info: "O planeta vermelho. Possui as maiores montanhas e cânions do Sistema Solar. Duas pequenas luas: Fobos e Deimos.",
     orbitSize: 228,
+    eccentricity: 0.093,
     planetSize: 3,
     color: "radial-gradient(circle, #FF6B47, #CD5C5C)"
   },
@@ -70,6 +74,7 @@ const planetData = {
     currentAngle: 78,
     info: "O maior planeta. Mais de 80 luas conhecidas. Grande Mancha Vermelha é uma tempestade maior que a Terra.",
     orbitSize: 520,
+    eccentricity: 0.048,
     planetSize: 12,
     color: "radial-gradient(circle, #D8CA9D 0%, #FAB069 50%, #CC8B5C 100%)"
   },
@@ -79,6 +84,7 @@ const planetData = {
     currentAngle: 345,
     info: "Famoso pelos anéis espetaculares. Densidade menor que a água. Titã, sua maior lua, tem atmosfera densa.",
     orbitSize: 954,
+    eccentricity: 0.054,
     planetSize: 10,
     color: "radial-gradient(circle, #FAB069, #E6B35C)",
     hasRings: true
@@ -89,6 +95,7 @@ const planetData = {
     currentAngle: 45,
     info: "Gira 'de lado' (98° de inclinação). Gigante gelado com anéis verticais. 27 luas conhecidas.",
     orbitSize: 1916,
+    eccentricity: 0.047,
     planetSize: 6,
     color: "radial-gradient(circle, #4FD0E7, #3BA7C7)"
   },
@@ -98,6 +105,7 @@ const planetData = {
     currentAngle: 315,
     info: "O planeta mais distante. Ventos de até 2.100 km/h - os mais rápidos do Sistema Solar. Cor azul devido ao metano.",
     orbitSize: 3006,
+    eccentricity: 0.009,
     planetSize: 6,
     color: "radial-gradient(circle, #4169E1, #2E4BC7)"
   }
@@ -131,10 +139,9 @@ const Star = ({ x, y, size, delay }) => {
 
 // Componente Planet
 const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
-  const { name, period, currentAngle, planetSize, color, hasRings, hasMoon, info } = data;
+  const { name, period, currentAngle, planetSize, color, hasRings, hasMoon, info, eccentricity } = data;
   const theme = useTheme();
 
-  // Remova a lógica de rotação
   const planetStyle = {
     position: 'absolute',
     width: `${planetSize}px`,
@@ -150,21 +157,25 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
     }
   };
 
-  // Calcule a posição X e Y do planeta
-  const orbitRadius = data.orbitSize / 2;
-  const x = Math.cos(currentAngle * Math.PI / 180) * orbitRadius;
-  const y = Math.sin(currentAngle * Math.PI / 180) * orbitRadius;
+  // Calcule os semi-eixos da elipse
+  const semiMajorAxis = data.orbitSize / 2; // 'a'
+  const semiMinorAxis = semiMajorAxis * Math.sqrt(1 - eccentricity * eccentricity); // 'b'
+
+  // Calcule a posição X e Y do planeta na órbita elíptica
+  const x = Math.cos(currentAngle * Math.PI / 180) * semiMajorAxis;
+  const y = Math.sin(currentAngle * Math.PI / 180) * semiMinorAxis;
 
   return (
     <Box>
-      {/* Órbita */}
+      {/* Órbita elíptica */}
       <Box
         sx={{
           position: 'absolute',
           border: `1px solid ${alpha(theme.palette.common.white, 0.06)}`,
           borderRadius: '50%',
-          width: `${data.orbitSize}px`,
-          height: `${data.orbitSize}px`,
+          // Use os semi-eixos para definir a largura e altura da órbita
+          width: `${semiMajorAxis * 2}px`,
+          height: `${semiMinorAxis * 2}px`,
           left: '50%',
           top: '50%',
           transform: 'translate(-50%, -50%)',
@@ -216,15 +227,15 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
               size="small"
               sx={{
                 position: 'absolute',
-                bottom: '100%', // Posiciona acima do planeta
-                left: '50%', // Alinha horizontalmente
-                transform: 'translateX(-50%)', // Centraliza a chip
+                bottom: '100%',
+                left: '50%',
+                transform: 'translateX(-50%)',
                 fontSize: '8px',
                 height: '16px',
                 backgroundColor: 'transparent',
                 color: theme.palette.warning.main,
                 pointerEvents: 'none',
-                zIndex: 100, // Adicione um zIndex alto
+                zIndex: 100,
                 '& .MuiChip-label': {
                   px: 10
                 }
