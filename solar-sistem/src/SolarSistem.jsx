@@ -25,92 +25,6 @@ import {
   Info
 } from '@mui/icons-material';
 
-// Dados planetários com informações reais
-const planetData = {
-  mercury: {
-    name: "Mercúrio",
-    period: 88,
-    currentAngle: 152,
-    info: "O menor e mais rápido planeta. Temperaturas extremas: 427°C (dia) a -173°C (noite). Sem atmosfera significativa.",
-    orbitSize: 80,
-    eccentricity: 0.206,
-    planetSize: 3,
-    color: "radial-gradient(circle, #B8860B, #8C7853)"
-  },
-  venus: {
-    name: "Vênus",
-    period: 225,
-    currentAngle: 108,
-    info: "O planeta mais quente (462°C) devido ao efeito estufa. Rotação retrógrada. Pressão 90x maior que a Terra.",
-    orbitSize: 108,
-    eccentricity: 0.007,
-    planetSize: 4,
-    color: "radial-gradient(circle, #FFF8DC, #FFC649)"
-  },
-  earth: {
-    name: "Terra",
-    period: 365.25,
-    currentAngle: 227,
-    info: "Nosso planeta azul. Única vida conhecida no universo. 71% da superfície coberta por água. 1 lua natural.",
-    orbitSize: 150,
-    eccentricity: 0.017,
-    planetSize: 4,
-    color: "radial-gradient(circle, #4A90E2 0%, #2E5F8A 50%, #228B22 100%)",
-    hasMoon: true
-  },
-  mars: {
-    name: "Marte",
-    period: 687,
-    currentAngle: 53,
-    info: "O planeta vermelho. Possui as maiores montanhas e cânions do Sistema Solar. Duas pequenas luas: Fobos e Deimos.",
-    orbitSize: 228,
-    eccentricity: 0.093,
-    planetSize: 3,
-    color: "radial-gradient(circle, #FF6B47, #CD5C5C)"
-  },
-  jupiter: {
-    name: "Júpiter",
-    period: 4332,
-    currentAngle: 78,
-    info: "O maior planeta. Mais de 80 luas conhecidas. Grande Mancha Vermelha é uma tempestade maior que a Terra.",
-    orbitSize: 520,
-    eccentricity: 0.048,
-    planetSize: 12,
-    color: "radial-gradient(circle, #D8CA9D 0%, #FAB069 50%, #CC8B5C 100%)"
-  },
-  saturn: {
-    name: "Saturno",
-    period: 10759,
-    currentAngle: 345,
-    info: "Famoso pelos anéis espetaculares. Densidade menor que a água. Titã, sua maior lua, tem atmosfera densa.",
-    orbitSize: 954,
-    eccentricity: 0.054,
-    planetSize: 10,
-    color: "radial-gradient(circle, #FAB069, #E6B35C)",
-    hasRings: true
-  },
-  uranus: {
-    name: "Urano",
-    period: 30687,
-    currentAngle: 45,
-    info: "Gira 'de lado' (98° de inclinação). Gigante gelado com anéis verticais. 27 luas conhecidas.",
-    orbitSize: 1916,
-    eccentricity: 0.047,
-    planetSize: 6,
-    color: "radial-gradient(circle, #4FD0E7, #3BA7C7)"
-  },
-  neptune: {
-    name: "Netuno",
-    period: 60190,
-    currentAngle: 315,
-    info: "O planeta mais distante. Ventos de até 2.100 km/h - os mais rápidos do Sistema Solar. Cor azul devido ao metano.",
-    orbitSize: 3006,
-    eccentricity: 0.009,
-    planetSize: 6,
-    color: "radial-gradient(circle, #4169E1, #2E4BC7)"
-  }
-};
-
 // Componente Star usando MUI Box
 const Star = ({ x, y, size, delay }) => {
   const theme = useTheme();
@@ -272,27 +186,6 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
                 />
               </>
             )}
-
-            {/* Lua da Terra */}
-            {hasMoon && (
-              <Box
-                sx={{
-                  position: 'absolute',
-                  width: '1px',
-                  height: '1px',
-                  backgroundColor: '#C0C0C0',
-                  borderRadius: '50%',
-                  right: '-6px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  animation: 'moonOrbit 27.3s linear infinite',
-                  '@keyframes moonOrbit': {
-                    '0%': { transform: 'translateY(-50%) rotate(0deg) translateX(6px) rotate(0deg)' },
-                    '100%': { transform: 'translateY(-50%) rotate(360deg) translateX(6px) rotate(-360deg)' }
-                  }
-                }}
-              />
-            )}
           </Box>
         </Tooltip>
       </Box>
@@ -341,9 +234,118 @@ const SolarSystem = () => {
   const [panY, setPanY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [lastMouse, setLastMouse] = useState({ x: 0, y: 0 });
+  const [currentDate, setCurrentDate] = useState(new Date());
+
+  // Dados planetários com informações reais
+  const planetData = {
+    mercury: {
+      name: "Mercúrio",
+      period: 88,
+      currentAngle: 152,
+      info: "O menor e mais rápido planeta. Temperaturas extremas: 427°C (dia) a -173°C (noite). Sem atmosfera significativa.",
+      orbitSize: 80,
+      eccentricity: 0.206,
+      planetSize: 3,
+      color: "radial-gradient(circle, #B8860B, #8C7853)"
+    },
+    venus: {
+      name: "Vênus",
+      period: 225,
+      currentAngle: 108,
+      info: "O planeta mais quente (462°C) devido ao efeito estufa. Rotação retrógrada. Pressão 90x maior que a Terra.",
+      orbitSize: 108,
+      eccentricity: 0.007,
+      planetSize: 4,
+      color: "radial-gradient(circle, #FFF8DC, #FFC649)"
+    },
+    earth: {
+      name: "Terra",
+      period: 365.25,
+      currentAngle: 227,
+      info: "Nosso planeta azul. Única vida conhecida no universo. 71% da superfície coberta por água. 1 lua natural.",
+      orbitSize: 150,
+      eccentricity: 0.017,
+      planetSize: 4,
+      color: "radial-gradient(circle, #4A90E2 0%, #2E5F8A 50%, #228B22 100%)",
+      hasMoon: true
+    },
+    mars: {
+      name: "Marte",
+      period: 687,
+      currentAngle: 53,
+      info: "O planeta vermelho. Possui as maiores montanhas e cânions do Sistema Solar. Duas pequenas luas: Fobos e Deimos.",
+      orbitSize: 228,
+      eccentricity: 0.093,
+      planetSize: 3,
+      color: "radial-gradient(circle, #FF6B47, #CD5C5C)"
+    },
+    jupiter: {
+      name: "Júpiter",
+      period: 4332,
+      currentAngle: 78,
+      info: "O maior planeta. Mais de 80 luas conhecidas. Grande Mancha Vermelha é uma tempestade maior que a Terra.",
+      orbitSize: 520,
+      eccentricity: 0.048,
+      planetSize: 12,
+      color: "radial-gradient(circle, #D8CA9D 0%, #FAB069 50%, #CC8B5C 100%)"
+    },
+    saturn: {
+      name: "Saturno",
+      period: 10759,
+      currentAngle: 345,
+      info: "Famoso pelos anéis espetaculares. Densidade menor que a água. Titã, sua maior lua, tem atmosfera densa.",
+      orbitSize: 954,
+      eccentricity: 0.054,
+      planetSize: 10,
+      color: "radial-gradient(circle, #FAB069, #E6B35C)",
+      hasRings: true
+    },
+    uranus: {
+      name: "Urano",
+      period: 30687,
+      currentAngle: 45,
+      info: "Gira 'de lado' (98° de inclinação). Gigante gelado com anéis verticais. 27 luas conhecidas.",
+      orbitSize: 1916,
+      eccentricity: 0.047,
+      planetSize: 6,
+      color: "radial-gradient(circle, #4FD0E7, #3BA7C7)"
+    },
+    neptune: {
+      name: "Netuno",
+      period: 60190,
+      currentAngle: 315,
+      info: "O planeta mais distante. Ventos de até 2.100 km/h - os mais rápidos do Sistema Solar. Cor azul devido ao metano.",
+      orbitSize: 3006,
+      eccentricity: 0.009,
+      planetSize: 6,
+      color: "radial-gradient(circle, #4169E1, #2E4BC7)"
+    }
+  };
 
   const containerRef = useRef(null);
   const solarSystemRef = useRef(null);
+
+  useEffect(() => {
+    let intervalId;
+    if (!isPaused) {
+      intervalId = setInterval(() => {
+        setPlanets(prevPlanets => {
+          const newPlanets = { ...prevPlanets };
+          const timeStepInDays = speed / 86400; // Converte segundos para dias (86400 segundos em um dia)
+
+          Object.keys(newPlanets).forEach(key => {
+            const planet = newPlanets[key];
+            const angleChange = (timeStepInDays / planet.period) * 360;
+            planet.currentAngle = (planet.currentAngle + angleChange) % 360;
+          });
+
+          return newPlanets;
+        });
+      }, 1000 / 60); // 60 atualizações por segundo para animação suave
+    }
+
+    return () => clearInterval(intervalId);
+  }, [isPaused, speed]);
 
   // Formatador de velocidade
   const formatSpeed = useCallback((speed) => {
@@ -446,6 +448,14 @@ const SolarSystem = () => {
       container.removeEventListener('mouseleave', handleMouseUp);
     };
   }, [handleWheel, handleMouseDown, handleMouseMove, handleMouseUp]);
+
+  // Atualizar a data atual
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentDate(new Date());
+    }, 1000); // Atualiza a cada segundo
+    return () => clearInterval(timer);
+  }, []);
 
   // Handlers vazios para manter compatibilidade
   const handlePlanetHover = () => { };
@@ -555,7 +565,11 @@ const SolarSystem = () => {
         }}
       >
         <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-          15 de Agosto de 2025
+          {new Intl.DateTimeFormat('pt-BR', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+          }).format(currentDate)}
         </Typography>
       </Paper>
 
