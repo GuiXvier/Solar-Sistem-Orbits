@@ -175,7 +175,12 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
                 color: theme.palette.warning.main,
                 pointerEvents: 'none',
                 zIndex: 100,
+                whiteSpace: 'nowrap', // Impede quebra de linha
                 '& .MuiChip-label': {
+                  px: isMobile ? 1 : 1, // Aumentado o padding em mobile
+                  py: 0,
+                  overflow: 'visible', // Permite texto completo
+                  textOverflow: 'unset' // Remove truncamento
                 }
               }}
             />
@@ -695,7 +700,8 @@ const SolarSystem = () => {
           ...(isMobile && {
             maxHeight: '40vh',
             overflow: 'auto'
-          })
+          }),
+          visibility: isMobile ? 'hidden' : 'visible'
         }}
       >
         <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
@@ -755,7 +761,7 @@ const SolarSystem = () => {
           backgroundColor: alpha(theme.palette.common.black, 0.85),
           color: theme.palette.warning.main,
           border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
-          backdropFilter: 'blur(10px)'
+          backdropFilter: 'blur(10px)',
         }}
       >
         <Typography
