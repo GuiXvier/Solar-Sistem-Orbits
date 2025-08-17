@@ -12,7 +12,8 @@ import {
   IconButton,
   Chip,
   useTheme,
-  alpha
+  alpha,
+  useMediaQuery
 } from '@mui/material';
 import {
   PlayArrow,
@@ -22,7 +23,8 @@ import {
   AccessTime,
   ZoomIn,
   Mouse,
-  Info
+  Info,
+  TouchApp
 } from '@mui/icons-material';
 
 import { calculateHeliocentricPosition, calculateAllPlanetPositions, dateToJulianDay, testCalculations } from './mainFunctions'
@@ -57,6 +59,7 @@ const Star = ({ x, y, size, delay }) => {
 const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
   const { name, period, currentAngle, planetSize, color, hasRings, hasMoon, info, eccentricity } = data;
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const planetStyle = {
     position: 'absolute',
@@ -70,7 +73,19 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
     '&:hover': {
       transform: 'translateY(-50%) scale(1.5)',
       zIndex: 100
-    }
+    },
+    // Aumentar área de toque em mobile
+    ...(isMobile && {
+      '&::after': {
+        content: '""',
+        position: 'absolute',
+        top: '-10px',
+        left: '-10px',
+        right: '-10px',
+        bottom: '-10px',
+        pointerEvents: 'none'
+      }
+    })
   };
 
   // Calcule os semi-eixos da elipse
@@ -84,7 +99,6 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
   // Posição na elipse com o Sol em um dos focos
   const x = (semiMajorAxis * Math.cos(anomalyRad)) - focusDistance;
   const y = semiMinorAxis * Math.sin(anomalyRad);
-
 
   return (
     <Box>
@@ -130,6 +144,9 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
           }
           arrow
           placement="top"
+          // Desabilitar tooltip no mobile para melhor performance
+          disableHoverListener={isMobile}
+          disableFocusListener={isMobile}
         >
           <Box
             sx={{
@@ -138,8 +155,10 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
               top: `calc(50% + ${y}px)`,
               transform: 'translate(-50%, -50%)'
             }}
-            onMouseEnter={(e) => onPlanetHover(e, name, info, period)}
-            onMouseLeave={onPlanetLeave}
+            onMouseEnter={(e) => !isMobile && onPlanetHover(e, name, info, period)}
+            onMouseLeave={!isMobile ? onPlanetLeave : undefined}
+            onTouchStart={(e) => isMobile && onPlanetHover(e, name, info, period)}
+            onTouchEnd={(e) => isMobile && onPlanetLeave()}
           >
             {/* Label do planeta */}
             <Chip
@@ -150,18 +169,16 @@ const Planet = ({ planetKey, data, speed, onPlanetHover, onPlanetLeave }) => {
                 bottom: '100%',
                 left: '50%',
                 transform: 'translateX(-50%)',
-                fontSize: '8px',
-                height: '16px',
+                fontSize: isMobile ? '6px' : '8px',
+                height: isMobile ? '14px' : '16px',
                 backgroundColor: 'transparent',
                 color: theme.palette.warning.main,
                 pointerEvents: 'none',
                 zIndex: 100,
                 '& .MuiChip-label': {
-                  px: 10
                 }
               }}
             />
-
 
             {/* Anéis de Saturno */}
             {hasRings && (
@@ -233,6 +250,7 @@ const Sun = () => {
 // Componente principal SolarSystem
 const SolarSystem = () => {
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [isPaused, setIsPaused] = useState(false);
   const [speed, setSpeed] = useState(3600);
   const [zoom, setZoom] = useState(1);
@@ -241,6 +259,11 @@ const SolarSystem = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [lastMouse, setLastMouse] = useState({ x: 0, y: 0 });
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  // Estados específicos para touch
+  const [isTouch, setIsTouch] = useState(false);
+  const [lastTouchDistance, setLastTouchDistance] = useState(0);
+  const [lastTouchCenter, setLastTouchCenter] = useState({ x: 0, y: 0 });
 
   // Dados planetários com informações reais
   const [planetData, setPlanetData] = useState({
@@ -348,8 +371,6 @@ const SolarSystem = () => {
     return mapping[englishName] || englishName.toLowerCase();
   };
 
-  // Adicione as funções do artifact acima no início do seu arquivo, após os imports
-
   const calculateCurrentPosition = (planetKey, date = new Date()) => {
     const position = calculateHeliocentricPosition(planetKey, date);
     return position ? position.normalizedAngle : 0;
@@ -361,7 +382,6 @@ const SolarSystem = () => {
       const currentDate = new Date();
       const positions = calculateAllPlanetPositions(currentDate);
 
-      // USE CALLBACK DO setState EM VEZ DE ACESSAR planetData DIRETAMENTE
       setPlanetData(prevPlanetData => {
         const updatedPlanets = { ...prevPlanetData };
 
@@ -384,44 +404,13 @@ const SolarSystem = () => {
     } finally {
       setIsLoadingPositions(false);
     }
-  }, []); // Array vazio - sem dependências
-
-  // Função auxiliar para API alternativa
-  const fetchFromAlternativeAPI = async () => {
-    try {
-      // Usando uma API mais simples como timeanddate.com ou astrology API
-      const response = await fetch('https://api.example.com/planets/positions');
-      const data = await response.json();
-
-      // Processar e atualizar dados dos planetas
-      const updatedPlanets = { ...planetData };
-      data.planets.forEach(planet => {
-        const planetKey = planet.name.toLowerCase();
-        if (updatedPlanets[planetKey]) {
-          updatedPlanets[planetKey].currentAngle = planet.position; // adaptar conforme API
-        }
-      });
-
-      setPlanetData(updatedPlanets);
-      setLastUpdated(new Date());
-    } catch (error) {
-      console.error('Erro na API alternativa:', error);
-    }
-  };
-
-  // Função para extrair ângulo dos dados do JPL
-  const extractAngleFromEphemeris = (ephemerisData) => {
-    // Implementar parsing específico dos dados do JPL
-    // Retorna o ângulo em graus para a posição orbital atual
-    return 0; // placeholder
-  };
+  }, []);
 
   useEffect(() => {
     let intervalId;
     if (!isPaused) {
       intervalId = setInterval(() => {
-        // Recalcular posições baseadas no tempo real
-        const currentDate = new Date(Date.now() + speed * 1000); // acelerar o tempo
+        const currentDate = new Date(Date.now() + speed * 1000);
         const positions = calculateAllPlanetPositions(currentDate);
 
         setPlanetData(prevPlanets => {
@@ -435,13 +424,12 @@ const SolarSystem = () => {
 
           return newPlanets;
         });
-      }, 1000); // Atualizar a cada segundo
+      }, 1000);
     }
 
     return () => clearInterval(intervalId);
   }, [isPaused, speed]);
 
-  // Formatador de velocidade
   const formatSpeed = useCallback((speed) => {
     if (speed < 60) return `${speed}x`;
     if (speed < 3600) return `${Math.round(speed / 60)} min/s`;
@@ -449,105 +437,180 @@ const SolarSystem = () => {
     return `${Math.round(speed / 86400)} dias/s`;
   }, []);
 
-  // Controle de zoom com mouse
-  const handleWheel = useCallback((e) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    const newZoom = Math.max(0.1, Math.min(5, zoom * delta));
-    setZoom(newZoom); // Apenas atualize o estado para o display
-    if (solarSystemRef.current) {
-      solarSystemRef.current.style.transform = `translate(${panX}px, ${panY}px) scale(${newZoom})`;
-    }
-  }, [panX, panY, zoom]);
+  // Funções auxiliares para touch
+  const getTouchDistance = (touches) => {
+    if (touches.length < 2) return 0;
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
 
-  // Controle de pan (arrastar)
-  const handleMouseDown = useCallback((e) => {
-    setIsDragging(true);
-    setLastMouse({ x: e.clientX, y: e.clientY });
+  const getTouchCenter = (touches) => {
+    if (touches.length < 2) return { x: touches[0].clientX, y: touches[0].clientY };
+    return {
+      x: (touches[0].clientX + touches[1].clientX) / 2,
+      y: (touches[0].clientY + touches[1].clientY) / 2
+    };
+  };
+
+  // Touch handlers
+  const handleTouchStart = useCallback((e) => {
+    e.preventDefault();
+    setIsTouch(true);
+
+    if (e.touches.length === 1) {
+      setIsDragging(true);
+      setLastMouse({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+    } else if (e.touches.length === 2) {
+      setIsDragging(false);
+      const distance = getTouchDistance(e.touches);
+      const center = getTouchCenter(e.touches);
+      setLastTouchDistance(distance);
+      setLastTouchCenter(center);
+    }
   }, []);
 
-  const handleMouseMove = useCallback((e) => {
-    if (isDragging) {
-      const deltaX = e.clientX - lastMouse.x;
-      const deltaY = e.clientY - lastMouse.y;
+  const handleTouchMove = useCallback((e) => {
+    e.preventDefault();
+
+    if (e.touches.length === 1 && isDragging) {
+      // Pan com um dedo
+      const deltaX = e.touches[0].clientX - lastMouse.x;
+      const deltaY = e.touches[0].clientY - lastMouse.y;
 
       const newPanX = panX + deltaX;
       const newPanY = panY + deltaY;
 
-      setPanX(newPanX); // Apenas atualize o estado para os controles
+      setPanX(newPanX);
       setPanY(newPanY);
+      setLastMouse({ x: e.touches[0].clientX, y: e.touches[0].clientY });
 
-      setLastMouse({ x: e.clientX, y: e.clientY });
-
-      // Aqui é onde a mágica acontece: atualize a ref diretamente
       if (solarSystemRef.current) {
         solarSystemRef.current.style.transform = `translate(${newPanX}px, ${newPanY}px) scale(${zoom})`;
       }
+    } else if (e.touches.length === 2) {
+      // Zoom com dois dedos
+      const distance = getTouchDistance(e.touches);
+      const center = getTouchCenter(e.touches);
+
+      if (lastTouchDistance > 0) {
+        const scale = distance / lastTouchDistance;
+        const newZoom = Math.max(0.1, Math.min(5, zoom * scale));
+        setZoom(newZoom);
+
+        // Ajustar pan baseado no centro do pinch
+        const centerDeltaX = center.x - lastTouchCenter.x;
+        const centerDeltaY = center.y - lastTouchCenter.y;
+
+        const newPanX = panX + centerDeltaX;
+        const newPanY = panY + centerDeltaY;
+
+        setPanX(newPanX);
+        setPanY(newPanY);
+
+        if (solarSystemRef.current) {
+          solarSystemRef.current.style.transform = `translate(${newPanX}px, ${newPanY}px) scale(${newZoom})`;
+        }
+      }
+
+      setLastTouchDistance(distance);
+      setLastTouchCenter(center);
     }
-  }, [isDragging, lastMouse, panX, panY, zoom]);
+  }, [isDragging, lastMouse, panX, panY, zoom, lastTouchDistance, lastTouchCenter]);
+
+  const handleTouchEnd = useCallback((e) => {
+    if (e.touches.length === 0) {
+      setIsDragging(false);
+      setIsTouch(false);
+      setLastTouchDistance(0);
+    } else if (e.touches.length === 1) {
+      // Transição de dois dedos para um dedo
+      setIsDragging(true);
+      setLastMouse({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+      setLastTouchDistance(0);
+    }
+  }, []);
+
+  // Mouse handlers (mantidos para desktop)
+  const handleWheel = useCallback((e) => {
+    if (isMobile) return; // Desabilitar wheel em mobile
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    const newZoom = Math.max(0.1, Math.min(5, zoom * delta));
+    setZoom(newZoom);
+    if (solarSystemRef.current) {
+      solarSystemRef.current.style.transform = `translate(${panX}px, ${panY}px) scale(${newZoom})`;
+    }
+  }, [panX, panY, zoom, isMobile]);
+
+  const handleMouseDown = useCallback((e) => {
+    if (isMobile || isTouch) return; // Ignorar mouse events em mobile/touch
+    setIsDragging(true);
+    setLastMouse({ x: e.clientX, y: e.clientY });
+  }, [isMobile, isTouch]);
+
+  const handleMouseMove = useCallback((e) => {
+    if (isMobile || isTouch || !isDragging) return;
+
+    const deltaX = e.clientX - lastMouse.x;
+    const deltaY = e.clientY - lastMouse.y;
+
+    const newPanX = panX + deltaX;
+    const newPanY = panY + deltaY;
+
+    setPanX(newPanX);
+    setPanY(newPanY);
+    setLastMouse({ x: e.clientX, y: e.clientY });
+
+    if (solarSystemRef.current) {
+      solarSystemRef.current.style.transform = `translate(${newPanX}px, ${newPanY}px) scale(${zoom})`;
+    }
+  }, [isDragging, lastMouse, panX, panY, zoom, isMobile, isTouch]);
 
   const handleMouseUp = useCallback(() => {
+    if (isMobile || isTouch) return;
     setIsDragging(false);
-  }, []);
+  }, [isMobile, isTouch]);
 
-  // Atalhos de teclado
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      switch (e.key) {
-        case ' ':
-          e.preventDefault();
-          setIsPaused(prev => !prev);
-          break;
-        case 'r':
-          setZoom(1);
-          setPanX(0);
-          setPanY(0);
-          break;
-        case 'c':
-          setPanX(0);
-          setPanY(0);
-          break;
-        case '+':
-        case '=':
-          setSpeed(prev => Math.min(10000, prev * 1.5));
-          break;
-        case '-':
-          setSpeed(prev => Math.max(1, prev / 1.5));
-          break;
-        default:
-          break;
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  // Event listeners para mouse
+  // Event listeners
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    container.addEventListener('wheel', handleWheel);
-    container.addEventListener('mousedown', handleMouseDown);
-    container.addEventListener('mousemove', handleMouseMove);
-    container.addEventListener('mouseup', handleMouseUp);
-    container.addEventListener('mouseleave', handleMouseUp);
+    // Touch events
+    container.addEventListener('touchstart', handleTouchStart, { passive: false });
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    container.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+    // Mouse events (apenas para desktop)
+    if (!isMobile) {
+      container.addEventListener('wheel', handleWheel);
+      container.addEventListener('mousedown', handleMouseDown);
+      container.addEventListener('mousemove', handleMouseMove);
+      container.addEventListener('mouseup', handleMouseUp);
+      container.addEventListener('mouseleave', handleMouseUp);
+    }
 
     return () => {
-      container.removeEventListener('wheel', handleWheel);
-      container.removeEventListener('mousedown', handleMouseDown);
-      container.removeEventListener('mousemove', handleMouseMove);
-      container.removeEventListener('mouseup', handleMouseUp);
-      container.removeEventListener('mouseleave', handleMouseUp);
+      container.removeEventListener('touchstart', handleTouchStart);
+      container.removeEventListener('touchmove', handleTouchMove);
+      container.removeEventListener('touchend', handleTouchEnd);
+
+      if (!isMobile) {
+        container.removeEventListener('wheel', handleWheel);
+        container.removeEventListener('mousedown', handleMouseDown);
+        container.removeEventListener('mousemove', handleMouseMove);
+        container.removeEventListener('mouseup', handleMouseUp);
+        container.removeEventListener('mouseleave', handleMouseUp);
+      }
     };
-  }, [handleWheel, handleMouseDown, handleMouseMove, handleMouseUp]);
+  }, [handleTouchStart, handleTouchMove, handleTouchEnd, handleWheel, handleMouseDown, handleMouseMove, handleMouseUp, isMobile]);
 
   // Atualizar a data atual
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentDate(new Date());
-    }, 1000); // Atualiza a cada segundo
+    }, 1000);
     return () => clearInterval(timer);
   }, []);
 
@@ -557,15 +620,14 @@ const SolarSystem = () => {
 
   // Buscar posições iniciais e configurar atualizações
   useEffect(() => {
-    fetchPlanetPositions(); // Busca inicial
+    fetchPlanetPositions();
 
-    // Atualizar a cada 6 horas (21600000 ms)
     const updateInterval = setInterval(() => {
       fetchPlanetPositions();
     }, 21600000);
 
     return () => clearInterval(updateInterval);
-  }, []);
+  }, [fetchPlanetPositions]);
 
   return (
     <Box
@@ -576,6 +638,7 @@ const SolarSystem = () => {
         overflow: 'hidden',
         position: 'relative',
         userSelect: 'none',
+        touchAction: 'none', // Previne scroll padrão no mobile
       }}
     >
       {/* Container principal */}
@@ -598,8 +661,8 @@ const SolarSystem = () => {
           ref={solarSystemRef}
           sx={{
             position: 'relative',
-            width: '1200px',
-            height: '1200px',
+            width: isMobile ? '800px' : '1200px',
+            height: isMobile ? '800px' : '1200px',
             transformStyle: 'preserve-3d',
           }}
         >
@@ -618,29 +681,47 @@ const SolarSystem = () => {
         </Box>
       </Box>
 
-      {/* Painel de Informações */}
+      {/* Painel de Informações - Responsivo */}
       <Card
         sx={{
           position: 'absolute',
-          top: 20,
-          left: 20,
-          maxWidth: 380,
+          top: isMobile ? 10 : 20,
+          left: isMobile ? 10 : 20,
+          maxWidth: isMobile ? '280px' : '380px',
           backgroundColor: alpha(theme.palette.common.black, 0.85),
           backdropFilter: 'blur(15px)',
           border: `1px solid ${alpha(theme.palette.common.white, 0.1)}`,
-          color: theme.palette.common.white
+          color: theme.palette.common.white,
+          ...(isMobile && {
+            maxHeight: '40vh',
+            overflow: 'auto'
+          })
         }}
       >
-        <CardContent>
-          <Typography variant="h6" sx={{ color: theme.palette.warning.main, mb: 2 }}>
+        <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+          <Typography
+            variant={isMobile ? "subtitle1" : "h6"}
+            sx={{
+              color: theme.palette.warning.main,
+              mb: isMobile ? 1 : 2,
+              fontSize: isMobile ? '0.9rem' : undefined
+            }}
+          >
             🌌 Sistema Solar Real - NASA JPL Data
           </Typography>
 
-          <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 'bold',
+              mb: 1,
+              fontSize: isMobile ? '0.75rem' : undefined
+            }}
+          >
             Posições Calculadas (NASA JPL):
           </Typography>
 
-          <Box sx={{ fontSize: '0.75rem', lineHeight: 1.4 }}>
+          <Box sx={{ fontSize: isMobile ? '0.65rem' : '0.75rem', lineHeight: 1.4 }}>
             {Object.entries(planetData).map(([key, planet]) => (
               <Typography key={planet.name} variant="caption" display="block">
                 • {planet.name}: {planet.currentAngle.toFixed(1)}°
@@ -649,53 +730,76 @@ const SolarSystem = () => {
             ))}
           </Box>
 
-          <Typography variant="caption" sx={{ mt: 2, fontStyle: 'italic', display: 'block' }}>
+          <Typography
+            variant="caption"
+            sx={{
+              mt: isMobile ? 1 : 2,
+              fontStyle: 'italic',
+              display: 'block',
+              fontSize: isMobile ? '0.65rem' : undefined
+            }}
+          >
             Cálculos baseados em elementos orbitais NASA JPL
           </Typography>
         </CardContent>
       </Card>
 
-      {/* Display de Data */}
+      {/* Display de Data - Responsivo */}
       <Paper
         sx={{
           position: 'absolute',
-          top: 20,
-          right: 20,
-          px: 3,
-          py: 2,
+          top: isMobile ? 10 : 20,
+          right: isMobile ? 10 : 20,
+          px: isMobile ? 2 : 3,
+          py: isMobile ? 1 : 2,
           backgroundColor: alpha(theme.palette.common.black, 0.85),
           color: theme.palette.warning.main,
           border: `1px solid ${alpha(theme.palette.warning.main, 0.3)}`,
           backdropFilter: 'blur(10px)'
         }}
       >
-        <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
+        <Typography
+          variant={isMobile ? "body2" : "body1"}
+          sx={{
+            fontWeight: 'bold',
+            fontSize: isMobile ? '0.8rem' : undefined
+          }}
+        >
           {new Intl.DateTimeFormat('pt-BR', {
             day: 'numeric',
-            month: 'long',
+            month: isMobile ? 'short' : 'long',
             year: 'numeric'
           }).format(currentDate)}
         </Typography>
       </Paper>
 
-      {/* Info de Zoom */}
+      {/* Info de Controle - Adaptado para Mobile */}
       <Paper
         sx={{
           position: 'absolute',
-          bottom: 140,
-          right: 20,
-          px: 2,
-          py: 1,
+          bottom: isMobile ? 20 : 140,
+          right: isMobile ? 10 : 20,
+          px: isMobile ? 1.5 : 2,
+          py: isMobile ? 0.5 : 1,
           backgroundColor: alpha(theme.palette.common.black, 0.8),
           color: theme.palette.warning.main,
           backdropFilter: 'blur(10px)'
         }}
       >
-        <Typography variant="caption" display="block">
-          <Mouse sx={{ fontSize: 12, mr: 0.5 }} />
-          Mouse: Zoom In/Out
+        <Typography variant="caption" display="block" sx={{ fontSize: isMobile ? '0.7rem' : undefined }}>
+          {isMobile ? (
+            <>
+              <TouchApp sx={{ fontSize: 12, mr: 0.5 }} />
+              Touch: Pan/Pinch Zoom
+            </>
+          ) : (
+            <>
+              <Mouse sx={{ fontSize: 12, mr: 0.5 }} />
+              Mouse: Zoom In/Out
+            </>
+          )}
         </Typography>
-        <Typography variant="caption">
+        <Typography variant="caption" sx={{ fontSize: isMobile ? '0.7rem' : undefined }}>
           Zoom: {Math.round(zoom * 100)}%
         </Typography>
       </Paper>
